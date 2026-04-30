@@ -1,49 +1,349 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的第一个 H5</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, "PingFang SC", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        .card {
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px 30px;
-            max-width: 400px;
-        }
-        h1 { font-size: 28px; margin-bottom: 16px; }
-        p { font-size: 16px; line-height: 1.6; opacity: 0.9; }
-        button {
-            margin-top: 24px;
-            padding: 12px 32px;
-            border: none;
-            border-radius: 50px;
-            background: white;
-            color: #764ba2;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>打地鼠大作战</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(135deg, #FFD89B 0%, #19547B 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+        overflow: hidden;
+    }
+    .game-container {
+        width: 100%;
+        max-width: 480px;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .header {
+        text-align: center;
+        color: white;
+        margin-bottom: 16px;
+    }
+    .title {
+        font-size: 26px;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        margin-bottom: 4px;
+    }
+    .subtitle { font-size: 13px; opacity: 0.9; }
+    .stats {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .stat-box {
+        flex: 1;
+        background: rgba(255,255,255,0.25);
+        border-radius: 14px;
+        padding: 10px;
+        text-align: center;
+        color: white;
+    }
+    .stat-label { font-size: 11px; opacity: 0.85; margin-bottom: 2px; }
+    .stat-value { font-size: 22px; font-weight: bold; }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .hole {
+        aspect-ratio: 1;
+        background: radial-gradient(ellipse at top, #3a1f0a 0%, #1a0a00 100%);
+        border-radius: 50%;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 8px 16px rgba(0,0,0,0.7), 0 4px 8px rgba(0,0,0,0.2);
+        cursor: pointer;
+    }
+    .mole {
+        position: absolute;
+        bottom: -100%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 75%;
+        height: 75%;
+        transition: bottom 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 50px;
+    }
+    .mole.up { bottom: 8%; }
+    .mole.hit { 
+        animation: hit 0.3s forwards;
+    }
+    @keyframes hit {
+        0% { transform: translateX(-50%) scale(1) rotate(0deg); }
+        50% { transform: translateX(-50%) scale(1.3) rotate(20deg); }
+        100% { transform: translateX(-50%) scale(0) rotate(360deg); opacity: 0; }
+    }
+    .score-popup {
+        position: absolute;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #FFD700;
+        font-size: 24px;
+        font-weight: bold;
+        pointer-events: none;
+        animation: popup 0.8s forwards;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    @keyframes popup {
+        0% { opacity: 1; transform: translate(-50%, 0) scale(0.5); }
+        100% { opacity: 0; transform: translate(-50%, -40px) scale(1.2); }
+    }
+    .start-btn {
+        width: 100%;
+        padding: 16px;
+        border: none;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        transition: transform 0.1s;
+    }
+    .start-btn:active { transform: scale(0.97); }
+    .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+        background: white;
+        border-radius: 24px;
+        padding: 30px 24px;
+        text-align: center;
+        max-width: 320px;
+        width: 90%;
+        animation: scaleIn 0.3s;
+    }
+    @keyframes scaleIn {
+        from { transform: scale(0.7); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    .modal-emoji { font-size: 60px; margin-bottom: 10px; }
+    .modal-title { font-size: 24px; font-weight: bold; color: #333; margin-bottom: 8px; }
+    .modal-score { font-size: 36px; font-weight: bold; color: #FF6B6B; margin: 16px 0; }
+    .modal-text { color: #666; font-size: 14px; margin-bottom: 20px; }
+    .modal-btn {
+        padding: 12px 32px;
+        border: none;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .footer {
+        text-align: center;
+        color: white;
+        font-size: 12px;
+        opacity: 0.8;
+        margin-top: 12px;
+    }
+</style>
 </head>
 <body>
-    <div class="card">
-        <h1>🎉 上线成功！</h1>
-        <p>这是我用 Vercel 部署的第一个网页。</p>
-        <button onclick="alert('恭喜你成为站长！')">点我试试</button>
+    <div class="game-container">
+        <div class="header">
+            <div class="title">🔨 打地鼠大作战</div>
+            <div class="subtitle">30秒内打中尽可能多的地鼠！</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">得分</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">时间</div>
+                <div class="stat-value" id="time">30</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">最高</div>
+                <div class="stat-value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <button class="start-btn" id="startBtn">▶ 开始游戏</button>
+
+        <div class="footer">提示：金色地鼠 +3 分，炸弹 -2 分 💣</div>
     </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-emoji" id="modalEmoji">🎉</div>
+            <div class="modal-title" id="modalTitle">游戏结束</div>
+            <div class="modal-score" id="modalScore">0</div>
+            <div class="modal-text" id="modalText">再接再厉！</div>
+            <button class="modal-btn" id="modalBtn">再玩一次</button>
+        </div>
+    </div>
+
+<script>
+    const grid = document.getElementById('grid');
+    const scoreEl = document.getElementById('score');
+    const timeEl = document.getElementById('time');
+    const bestEl = document.getElementById('best');
+    const startBtn = document.getElementById('startBtn');
+    const modal = document.getElementById('modal');
+    const modalEmoji = document.getElementById('modalEmoji');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalScore = document.getElementById('modalScore');
+    const modalText = document.getElementById('modalText');
+    const modalBtn = document.getElementById('modalBtn');
+
+    let score = 0;
+    let timeLeft = 30;
+    let best = 0;
+    let gameRunning = false;
+    let gameTimer, moleTimer;
+    const HOLE_COUNT = 9;
+    const holes = [];
+
+    // 创建9个洞
+    for (let i = 0; i < HOLE_COUNT; i++) {
+        const hole = document.createElement('div');
+        hole.className = 'hole';
+        const mole = document.createElement('div');
+        mole.className = 'mole';
+        hole.appendChild(mole);
+        hole.addEventListener('click', () => hitMole(i));
+        grid.appendChild(hole);
+        holes.push({ el: hole, mole: mole, type: null, active: false });
+    }
+
+    function hitMole(i) {
+        if (!gameRunning) return;
+        const h = holes[i];
+        if (!h.active) return;
+        h.active = false;
+        let points = 0;
+        let color = '#FFD700';
+        if (h.type === 'normal') { points = 1; }
+        else if (h.type === 'gold') { points = 3; color = '#FFD700'; }
+        else if (h.type === 'bomb') { points = -2; color = '#FF4444'; }
+
+        score += points;
+        if (score < 0) score = 0;
+        scoreEl.textContent = score;
+
+        // 飘分动画
+        const popup = document.createElement('div');
+        popup.className = 'score-popup';
+        popup.textContent = (points >= 0 ? '+' : '') + points;
+        popup.style.color = color;
+        h.el.appendChild(popup);
+        setTimeout(() => popup.remove(), 800);
+
+        h.mole.classList.add('hit');
+        setTimeout(() => {
+            h.mole.classList.remove('hit', 'up');
+            h.mole.textContent = '';
+        }, 300);
+    }
+
+    function showMole() {
+        if (!gameRunning) return;
+        const idle = holes.filter(h => !h.active);
+        if (idle.length === 0) return;
+        const h = idle[Math.floor(Math.random() * idle.length)];
+        const r = Math.random();
+        if (r < 0.15) { h.type = 'bomb'; h.mole.textContent = '💣'; }
+        else if (r < 0.30) { h.type = 'gold'; h.mole.textContent = '🐹'; h.mole.style.filter = 'hue-rotate(45deg) brightness(1.3) drop-shadow(0 0 8px gold)'; }
+        else { h.type = 'normal'; h.mole.textContent = '🐭'; h.mole.style.filter = 'none'; }
+        h.active = true;
+        h.mole.classList.add('up');
+
+        // 难度递增：随时间缩短停留时间
+        const stayTime = Math.max(600, 1400 - (30 - timeLeft) * 25);
+        setTimeout(() => {
+            if (h.active) {
+                h.active = false;
+                h.mole.classList.remove('up');
+            }
+        }, stayTime);
+    }
+
+    function startGame() {
+        score = 0;
+        timeLeft = 30;
+        gameRunning = true;
+        scoreEl.textContent = '0';
+        timeEl.textContent = '30';
+        startBtn.textContent = '⏸ 游戏中...';
+        startBtn.disabled = true;
+
+        gameTimer = setInterval(() => {
+            timeLeft--;
+            timeEl.textContent = timeLeft;
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+
+        // 出地鼠间隔随时间加快
+        function scheduleNext() {
+            if (!gameRunning) return;
+            showMole();
+            const interval = Math.max(400, 900 - (30 - timeLeft) * 15);
+            moleTimer = setTimeout(scheduleNext, interval);
+        }
+        scheduleNext();
+    }
+
+    function endGame() {
+        gameRunning = false;
+        clearInterval(gameTimer);
+        clearTimeout(moleTimer);
+        holes.forEach(h => { h.active = false; h.mole.classList.remove('up'); });
+        startBtn.textContent = '▶ 开始游戏';
+        startBtn.disabled = false;
+
+        if (score > best) { best = score; bestEl.textContent = best; }
+
+        // 根据得分给评价
+        let emoji = '😅', title = '游戏结束', text = '继续努力！';
+        if (score >= 50) { emoji = '🏆'; title = '神之手！'; text = '你是打地鼠之王！'; }
+        else if (score >= 30) { emoji = '🎉'; title = '太棒了！'; text = '反应非常敏捷！'; }
+        else if (score >= 15) { emoji = '👏'; title = '不错哦'; text = '再练练就更厉害了！'; }
+        else if (score >= 5) { emoji = '😊'; title = '加油'; text = '多玩几次熟练就好！'; }
+
+        modalEmoji.textContent = emoji;
+        modalTitle.textContent = title;
+        modalScore.textContent = score + ' 分';
+        modalText.textContent = text;
+        modal.classList.add('show');
+    }
+
+    startBtn.addEventListener('click', startGame);
+    modalBtn.addEventListener('click', () => {
+        modal.classList.remove('show');
+        startGame();
+    });
+</script>
 </body>
 </html>
